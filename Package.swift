@@ -17,6 +17,8 @@ let package = Package(
         .library(name: "Carnelian", targets: ["Carnelian"]),
         // Test helpers (MockClient) — mirror of JadeTesting. Excluded from release.
         .library(name: "CarnelianTesting", targets: ["CarnelianTesting"]),
+        // Account linking over Firebase Auth (mechanism; the app supplies policy).
+        .library(name: "CarnelianAuth", targets: ["CarnelianAuth"]),
     ],
     dependencies: [
         // Macro plumbing.
@@ -46,6 +48,14 @@ let package = Package(
             name: "CarnelianTesting",
             dependencies: ["Carnelian"]
         ),
+        // Account linking over Firebase Auth. Depends only on FirebaseAuth — it is
+        // independent of the Firestore layer.
+        .target(
+            name: "CarnelianAuth",
+            dependencies: [
+                .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
+            ]
+        ),
         // A runnable walkthrough: `swift run CarnelianDemo` (no Firebase config).
         .executableTarget(
             name: "CarnelianDemo",
@@ -57,6 +67,10 @@ let package = Package(
                 "Carnelian",
                 "CarnelianTesting",
             ]
+        ),
+        .testTarget(
+            name: "CarnelianAuthTests",
+            dependencies: ["CarnelianAuth"]
         ),
     ]
 )

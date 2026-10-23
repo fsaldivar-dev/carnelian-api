@@ -37,7 +37,8 @@ Swift Package Manager:
 .package(url: "https://github.com/fsaldivar-dev/carnelian-api.git", from: "0.1.0")
 ```
 
-Then add `Carnelian` (and `CarnelianTesting` to your test target).
+Then add `Carnelian` (plus `CarnelianAuth` for account linking, and
+`CarnelianTesting` in your test target).
 
 ## Usage
 
@@ -134,6 +135,48 @@ swift build --target CarnelianDemo -Xswiftc -Xfrontend -Xswiftc -dump-macro-expa
 // @Repository       → private let client + init(client:)
 // @Collection("users") → var users: Query<User> { get { client.collection("users") } }
 ```
+
+## Account linking (`CarnelianAuth`)
+
+Link several sign-in providers to **one** Firebase user — the official Firebase
+model (linked providers share one UID). Carnelian owns the *flow*; your app owns
+the merge *policy* via `AccountMerger`.
+
+```swift
+import CarnelianAuth
+
+let authn = CarnelianAuth()
+
+// Happy path: link a second provider to the signed-in user (same UID).
+switch try await authn.link(.google(idToken: idToken, accessToken: accessToken)) {
+case .linked(let uid):            print("linked into \(uid)")
+case .merged(let kept, let orphan): print("merged \(orphan) → \(kept)")
+}
+
+// Collision — the provider already belongs to another account:
+do {
+    try await authn.link(.apple(idToken: token, rawNonce: nonce))
+} catch CarnelianAuthError.credentialInUse {
+    try await authn.resolveCollision(.apple(idToken: token, rawNonce: nonce), merging: myMerger)
+}
+
+authn.linkedProviders            // ["password", "google.com"]
+try await authn.unlink("google.com")
+```
+
+Your app supplies the policy — Carnelian never knows your collections:
+
+```swift
+struct SajaruMerger: AccountMerger {
+    func merge(from orphanUID: String, into baseUID: String) async throws {
+        // reassign check_ins.userId / payments.userId, repoint members.linkedUserId,
+        // inherit role, soft-delete users/orphanUID …
+    }
+}
+```
+
+> The client **cannot** delete the orphan's Firebase Auth account — only the Admin
+> SDK can. `LinkOutcome.merged` hands you the `orphanUID` so your backend finishes it.
 
 ## Design
 
