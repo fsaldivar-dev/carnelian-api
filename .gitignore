@@ -19,3 +19,11 @@ DerivedData/
 GoogleService-Info.plist
 *.xcconfig.local
 .env
+
+# Firebase emulator artifacts
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+database-debug.log
+auth-debug.log
+.firebase/

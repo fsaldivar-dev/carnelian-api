@@ -61,6 +61,12 @@ let package = Package(
             name: "CarnelianDemo",
             dependencies: ["Carnelian", "CarnelianTesting"]
         ),
+        // Real CRUD + account link/merge against the Firebase Emulator Suite.
+        // Run via: firebase emulators:exec 'swift run CarnelianEmulatorDemo'
+        .executableTarget(
+            name: "CarnelianEmulatorDemo",
+            dependencies: ["Carnelian", "CarnelianAuth"]
+        ),
         .testTarget(
             name: "CarnelianTests",
             dependencies: [

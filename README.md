@@ -136,6 +136,20 @@ swift build --target CarnelianDemo -Xswiftc -Xfrontend -Xswiftc -dump-macro-expa
 // @Collection("users") → var users: Query<User> { get { client.collection("users") } }
 ```
 
+### Against the Firebase Emulator (real CRUD)
+
+With the Firebase CLI installed:
+
+```bash
+firebase emulators:exec --project demo-carnelian --only auth,firestore 'swift run CarnelianEmulatorDemo'
+```
+
+Runs real `add` / `get` / `update` / `count` / `softDelete` against the Firestore
+emulator. Account link/merge is included too, but FirebaseAuth needs a **signed app
+bundle** for Keychain access — a bare `swift run` binary has none, so in a CLI run the
+Auth step is skipped with a note (the link/merge logic is covered by `CarnelianAuthTests`
+and runs in a real app).
+
 ## Account linking (`CarnelianAuth`)
 
 Link several sign-in providers to **one** Firebase user — the official Firebase
