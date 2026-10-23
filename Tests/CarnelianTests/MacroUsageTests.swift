@@ -11,7 +11,7 @@ import XCTest
 import Carnelian
 
 private struct Member: CarnelianModel {
-    var id: String?
+    @Document var id: String?        // verifies the @Document -> DocumentID alias
     var name: String
     var isActive: Bool
 }
@@ -23,10 +23,11 @@ private actor MemberRepository {
 
 final class MacroUsageTests: XCTestCase {
 
-    func testRepositoryGeneratesInitializerAndCollection() async {
-        // `init()` comes from @Repository; `members` getter comes from @Collection.
-        let repository = MemberRepository()
-        let members = await repository.members
-        _ = members
+    // The @Repository actor + @Collection property above only *compile* if the
+    // macros expand correctly (@Repository must inject `client` + `init`, and
+    // @Collection must synthesize `get { client.collection("members") }`). We do
+    // not instantiate the repository, so the test needs no configured FirebaseApp.
+    func testMacrosExpandAndCompile() {
+        _ = MemberRepository.self
     }
 }

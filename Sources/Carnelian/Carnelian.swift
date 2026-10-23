@@ -31,7 +31,7 @@ import FirebaseFirestore
 /// ```
 ///
 /// The annotated type should hold only `@Collection` properties.
-@attached(member, names: named(client), named(`init`))
+@attached(member, names: arbitrary)
 public macro Repository() =
     #externalMacro(module: "CarnelianMacros", type: "RepositoryMacro")
 

@@ -12,7 +12,11 @@ import Foundation
 /// Conforming types are plain `Codable` structs. The `id` maps to the Firestore
 /// document identifier (populate it with the `@Document` annotation, or leave it
 /// `nil` and Carnelian assigns one on `add`).
-public protocol CarnelianModel: Codable, Sendable, Identifiable where ID == String? {
+///
+/// Note: `CarnelianModel` deliberately does **not** require `Sendable`. Firestore's
+/// `@DocumentID` property wrapper (what `@Document` maps to) is not `Sendable`, so
+/// requiring it would make the headline id-mapping feature impossible to use.
+public protocol CarnelianModel: Codable, Identifiable where ID == String? {
     var id: String? { get set }
 }
 

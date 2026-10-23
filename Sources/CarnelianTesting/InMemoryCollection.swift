@@ -6,12 +6,15 @@
 //  JadeApi's `MockClient`. Use it to exercise repository logic in tests without
 //  touching Firestore. Excluded from release builds.
 //
+//  It is a plain `final class` (not an actor) so it can hold and return models
+//  that are not `Sendable` — the norm for Firestore `@Document`-backed types.
+//
 
 import Foundation
 import Carnelian
 
 /// An in-memory collection with the same CRUD surface as `Query<Element>`.
-public actor InMemoryCollection<Element: CarnelianModel> {
+public final class InMemoryCollection<Element: CarnelianModel> {
 
     private var storage: [String: Element] = [:]
     private var autoID = 0
