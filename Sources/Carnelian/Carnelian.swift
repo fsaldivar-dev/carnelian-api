@@ -13,25 +13,33 @@ import FirebaseFirestore
 
 // MARK: - @Repository / @Collection (macros)
 
-/// Marks a type (preferably an `actor`) as a Carnelian repository.
+/// Marks a type or protocol as a Carnelian repository. Two modes:
 ///
-/// The macro injects a `CarnelianClient` and an initializer, so the type's
-/// `@Collection` properties have a client to resolve against. The result mirrors
-/// the hand-written `FirestoreXRepository`: an actor that vends typed collections.
+/// **On a concrete type** (preferably an `actor`): injects a `CarnelianClient`
+/// and an initializer, so the type's `@Collection` properties have a client.
 ///
 /// ```swift
 /// @Repository
 /// actor AppRepository {
 ///     @Collection("users") var users: Query<User>
-///     @Collection("posts") var posts: Query<Post>
 /// }
-///
 /// let repo = AppRepository()                 // generated init
-/// let active = try await repo.users.active().get()
 /// ```
 ///
-/// The annotated type should hold only `@Collection` properties.
+/// **On a `protocol`**: generates a concrete `<Name>Live` struct that conforms to
+/// it, implementing each `@Collection` requirement — the JadeApi-style model where
+/// you declare the shape and the macro writes the implementation.
+///
+/// ```swift
+/// @Repository
+/// protocol AppRepository {
+///     @Collection("users") var users: Query<User> { get }
+/// }
+/// // generates: struct AppRepositoryLive: AppRepository { ... }
+/// let repo: AppRepository = AppRepositoryLive()
+/// ```
 @attached(member, names: arbitrary)
+@attached(peer, names: suffixed(Live))
 public macro Repository() =
     #externalMacro(module: "CarnelianMacros", type: "RepositoryMacro")
 

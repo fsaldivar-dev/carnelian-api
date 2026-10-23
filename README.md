@@ -63,6 +63,30 @@ let repo = AppRepository()
 let active = try await repo.users.active().get()
 ```
 
+### Protocol mode — the macro writes the implementation
+
+Declare a protocol; `@Repository` generates a conforming `…Live` struct. The
+access level is inherited, so a `public protocol` yields a `public struct`:
+
+```swift
+@Repository
+protocol GymRepository {
+    @Collection("members") var members: Query<User> { get }
+    @Collection("classes") var classes: Query<Post> { get }
+}
+
+// @Repository generates:
+// struct GymRepositoryLive: GymRepository {
+//     private let client: CarnelianClient
+//     init(client: CarnelianClient = CarnelianClient()) { … }
+//     var members: Query<User> { client.collection("members") }
+//     var classes: Query<Post> { client.collection("classes") }
+// }
+
+let repo: GymRepository = GymRepositoryLive()
+let active = try await repo.members.active().get()
+```
+
 ### Runtime (works today)
 
 ```swift
@@ -124,7 +148,7 @@ swift build --target CarnelianDemo -Xswiftc -Xfrontend -Xswiftc -dump-macro-expa
 - [x] Runtime: `CarnelianClient`, typed `Query<Element>`, CRUD, soft-delete, count
 - [x] `CarnelianTesting` in-memory collection
 - [x] **Macro engine** — `@Repository` injects client+init, `@Collection` vends typed collections, `@Document` maps to Firestore `@DocumentID`
-- [ ] Macro expands a full generated **actor** from a `protocol` (peer-type generation)
+- [x] **Peer-type generation** — `@Repository` on a `protocol` generates a conforming `<Name>Live` type (access level inherited)
 - [ ] Named databases per environment (`test` / `stage` / `prod`)
 - [ ] Listeners / snapshots (live queries)
 - [ ] Batched writes & transactions

@@ -40,13 +40,19 @@ struct Post: CarnelianModel {
     var title: String
 }
 
-// …and the macros generate the `client`, the `init`, and each typed collection
-// accessor. In a real app you'd do:
+// …or declare a *protocol*, and @Repository generates a conforming `…Live` type:
+
+@Repository
+protocol GymRepository {
+    @Collection("members") var members: Query<User> { get }
+    @Collection("classes") var classes: Query<Post> { get }
+}
+// generated: struct GymRepositoryLive: GymRepository { client + init + both collections }
+
+// In a real app you'd do (we don't call it here — it would hit live Firestore):
 //
-//     let repo = AppRepository()                    // generated init
-//     let active = try await repo.users.active().get()
-//
-// (We don't call it here because it would hit live Firestore.)
+//     let repo: GymRepository = GymRepositoryLive()      // generated type
+//     let active = try await repo.members.active().get()
 
 func banner(_ title: String) {
     print("\n\u{001B}[1;31m● \(title)\u{001B}[0m")
@@ -61,13 +67,14 @@ This demo runs the Carnelian API against an in-memory collection (no Firebase
 needed). The same calls work on real Firestore via CarnelianClient.
 """)
 
-banner("You declared")
+banner("You declared (protocol mode — the macro writes the implementation)")
 print("""
     @Repository
-    actor AppRepository {
-        @Collection("users") var users: Query<User>
-        @Collection("posts") var posts: Query<Post>
+    protocol GymRepository {
+        @Collection("members") var members: Query<User>  { get }
+        @Collection("classes") var classes: Query<Post>  { get }
     }
+    // @Repository generates →  struct GymRepositoryLive: GymRepository { … }
 """)
 
 // MARK: - 3. A live CRUD session (in-memory, but same API surface)
