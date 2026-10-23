@@ -2,16 +2,17 @@
 //  CarnelianPlugin.swift
 //  CarnelianMacros
 //
-//  The compiler plugin that backs @Repository / @Collection / @Document.
+//  The compiler plugin that backs @Repository and @Collection.
 //
-//  STATUS: skeleton. The expansions below compile but do not yet emit code —
-//  generating the Firestore-backed `actor` (CRUD, merge, soft-delete) from an
-//  annotated protocol is the next milestone. The runtime API in `Carnelian`
-//  (`CarnelianClient` / `Query`) is already fully usable without the macro.
+//  Design note: `@Collection` only needs to read the collection *path*. The
+//  element type is inferred by `CarnelianClient.collection(_:)` from the
+//  property's declared type (`var users: Query<User>` → `Query<User>`), so the
+//  macro never has to parse generic arguments.
 //
 
 import SwiftCompilerPlugin
 import SwiftSyntax
+import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 
 @main
@@ -19,42 +20,72 @@ struct CarnelianPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
         RepositoryMacro.self,
         CollectionMacro.self,
-        DocumentMacro.self,
     ]
 }
 
-/// Generates a Firestore-backed repository implementation for an annotated type.
+/// Errors surfaced to the compiler as macro diagnostics.
+enum CarnelianMacroError: Error, CustomStringConvertible {
+    case message(String)
+    var description: String {
+        switch self {
+        case .message(let text): return text
+        }
+    }
+}
+
+/// `@Repository` — injects the `CarnelianClient` and an initializer into the
+/// annotated type, so its `@Collection` properties have a client to talk to.
+///
+/// Applied to an `actor`, the result is exactly the shape of the hand-written
+/// `FirestoreXRepository`: an actor that vends typed, CRUD-capable collections.
+///
+/// The annotated type should hold only `@Collection` properties (the generated
+/// initializer covers `client` only).
 public struct RepositoryMacro: MemberMacro {
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        // TODO: walk the @Collection members and synthesize the actor + CRUD.
-        return []
+        let client: DeclSyntax =
+            "private let client: CarnelianClient"
+        let initializer: DeclSyntax =
+            """
+            init(client: CarnelianClient = CarnelianClient()) {
+                self.client = client
+            }
+            """
+        return [client, initializer]
     }
 }
 
-/// Binds a property to a Firestore collection path.
-public struct CollectionMacro: PeerMacro {
+/// `@Collection("path")` — turns a `var users: Query<User>` property into a
+/// computed accessor that returns the typed collection from the client.
+///
+/// Expands to:
+/// ```swift
+/// get { client.collection("path") }
+/// ```
+public struct CollectionMacro: AccessorMacro {
     public static func expansion(
         of node: AttributeSyntax,
-        providingPeersOf declaration: some DeclSyntaxProtocol,
+        providingAccessorsOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
-        // TODO: synthesize the backing `Query<Element>` accessor from the path.
-        return []
-    }
-}
+    ) throws -> [AccessorDeclSyntax] {
+        guard
+            let arguments = node.arguments?.as(LabeledExprListSyntax.self),
+            let literal = arguments.first?.expression.as(StringLiteralExprSyntax.self),
+            let path = literal.representedLiteralValue
+        else {
+            throw CarnelianMacroError.message(
+                #"@Collection requires a string literal path, e.g. @Collection("users")"#
+            )
+        }
 
-/// Marks the Firestore document identifier on a model.
-public struct DocumentMacro: PeerMacro {
-    public static func expansion(
-        of node: AttributeSyntax,
-        providingPeersOf declaration: some DeclSyntaxProtocol,
-        in context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
-        // TODO: bridge to Firestore's @DocumentID behavior.
-        return []
+        let getter: AccessorDeclSyntax =
+            """
+            get { client.collection(\(literal: path)) }
+            """
+        return [getter]
     }
 }

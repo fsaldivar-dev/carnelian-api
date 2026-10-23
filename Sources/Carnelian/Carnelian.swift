@@ -9,39 +9,51 @@
 //  generates the repository that reads, writes, merges and soft-deletes them.
 //
 
-// MARK: - Annotations (macros)
-//
-// NOTE: The macro *engine* (code generation) is the next milestone — see
-// `Sources/CarnelianMacros`. The declarations below define the intended surface
-// shown on the README/cover. Until expansion lands you can use the runtime API
-// (`CarnelianClient` / `Query`) directly, which is fully functional.
+import FirebaseFirestore
 
-/// Marks a `protocol` (or schema type) as a Carnelian repository.
+// MARK: - @Repository / @Collection (macros)
+
+/// Marks a type (preferably an `actor`) as a Carnelian repository.
 ///
-/// The macro generates a Firestore-backed `actor` implementation with CRUD,
-/// `merge`, soft-delete and typed queries — the same shape you write by hand in
-/// `FirestoreXRepository` today.
+/// The macro injects a `CarnelianClient` and an initializer, so the type's
+/// `@Collection` properties have a client to resolve against. The result mirrors
+/// the hand-written `FirestoreXRepository`: an actor that vends typed collections.
 ///
 /// ```swift
 /// @Repository
-/// protocol MemberRepository {
-///     @Collection("members") var members: Query<Member> { get }
+/// actor AppRepository {
+///     @Collection("users") var users: Query<User>
+///     @Collection("posts") var posts: Query<Post>
 /// }
+///
+/// let repo = AppRepository()                 // generated init
+/// let active = try await repo.users.active().get()
 /// ```
-@attached(member, names: arbitrary)
+///
+/// The annotated type should hold only `@Collection` properties.
+@attached(member, names: named(client), named(`init`))
 public macro Repository() =
     #externalMacro(module: "CarnelianMacros", type: "RepositoryMacro")
 
 /// Binds a property to a Firestore collection path.
 ///
+/// Expands `var users: Query<User>` into a computed property returning the typed
+/// collection. The element type (`User`) is inferred from the property's type.
+///
 /// ```swift
 /// @Collection("users") var users: Query<User>
 /// ```
-@attached(peer)
+@attached(accessor)
 public macro Collection(_ path: String) =
     #externalMacro(module: "CarnelianMacros", type: "CollectionMacro")
 
+// MARK: - @Document
+
 /// Marks the Firestore document identifier on a model.
+///
+/// This is Firestore's own `@DocumentID` property wrapper, re-exported under a
+/// name that fits the Carnelian vocabulary. Firestore populates it with the
+/// document id on decode and omits it from the written fields on encode.
 ///
 /// ```swift
 /// struct User: CarnelianModel {
@@ -49,6 +61,7 @@ public macro Collection(_ path: String) =
 ///     var name: String
 /// }
 /// ```
-@attached(peer)
-public macro Document() =
-    #externalMacro(module: "CarnelianMacros", type: "DocumentMacro")
+///
+/// Note: if your toolchain does not resolve the alias form as a property wrapper,
+/// use Firestore's `@DocumentID` directly — it is the identical type.
+public typealias Document = DocumentID

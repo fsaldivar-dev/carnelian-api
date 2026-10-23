@@ -51,7 +51,6 @@ let package = Package(
             dependencies: [
                 "Carnelian",
                 "CarnelianTesting",
-                .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
             ]
         ),
     ]

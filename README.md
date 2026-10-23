@@ -41,22 +41,26 @@ Then add `Carnelian` (and `CarnelianTesting` to your test target).
 
 ## Usage
 
-### Declarative (the goal — see Roadmap)
+### Declarative (works now ✨)
 
 ```swift
 import Carnelian
 
 struct User: CarnelianModel {
-    @Document var id: String?
+    @Document var id: String?        // Firestore document id
     var name: String
     var isActive: Bool
 }
 
+// @Repository injects the client + init; @Collection vends each typed collection.
 @Repository
-protocol AppSchema {
-    @Collection("users") var users: Query<User> { get }
-    @Collection("posts") var posts: Query<Post> { get }
+actor AppRepository {
+    @Collection("users") var users: Query<User>
+    @Collection("posts") var posts: Query<Post>
 }
+
+let repo = AppRepository()
+let active = try await repo.users.active().get()
 ```
 
 ### Runtime (works today)
@@ -100,7 +104,8 @@ let all = await users.get()
 
 - [x] Runtime: `CarnelianClient`, typed `Query<Element>`, CRUD, soft-delete, count
 - [x] `CarnelianTesting` in-memory collection
-- [ ] **Macro engine** — expand `@Repository` / `@Collection` / `@Document` into the backing actor
+- [x] **Macro engine** — `@Repository` injects client+init, `@Collection` vends typed collections, `@Document` maps to Firestore `@DocumentID`
+- [ ] Macro expands a full generated **actor** from a `protocol` (peer-type generation)
 - [ ] Named databases per environment (`test` / `stage` / `prod`)
 - [ ] Listeners / snapshots (live queries)
 - [ ] Batched writes & transactions
