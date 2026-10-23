@@ -1,0 +1,21 @@
+# Xcode / SwiftPM
+.DS_Store
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.swiftpm/configuration
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcscmblueprint
+*.xccheckout
+
+# Resolved dependencies (uncomment to pin via CI instead)
+# Package.resolved
+
+# Secrets / Firebase config — never commit these
+GoogleService-Info.plist
+*.xcconfig.local
+.env
