@@ -46,6 +46,11 @@ let package = Package(
             name: "CarnelianTesting",
             dependencies: ["Carnelian"]
         ),
+        // A runnable walkthrough: `swift run CarnelianDemo` (no Firebase config).
+        .executableTarget(
+            name: "CarnelianDemo",
+            dependencies: ["Carnelian", "CarnelianTesting"]
+        ),
         .testTarget(
             name: "CarnelianTests",
             dependencies: [

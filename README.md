@@ -92,6 +92,25 @@ let users = InMemoryCollection<User>([User(id: "1", name: "Ana", isActive: true)
 let all = await users.get()
 ```
 
+## Try it
+
+A no-config, runnable walkthrough (CRUD against the in-memory collection):
+
+```bash
+swift run CarnelianDemo
+```
+
+Want to see what the annotations generate? Dump the macro expansions:
+
+```bash
+swift build --target CarnelianDemo -Xswiftc -Xfrontend -Xswiftc -dump-macro-expansions
+```
+
+```swift
+// @Repository       → private let client + init(client:)
+// @Collection("users") → var users: Query<User> { get { client.collection("users") } }
+```
+
 ## Design
 
 - **One place per collection.** The annotation holds the path; the repository is generated.
